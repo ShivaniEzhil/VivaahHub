@@ -12,7 +12,7 @@ import { API_BASE_URL } from "../config.js"
 import { INDIAN_CITIES, CITY_PLACEHOLDER, CURRENCY } from "../constants/locations.js"
 
 const WeddingServicesForm = () => {
-  const { user } = useAuth()
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
   const { serviceId } = useParams()
   const isEditMode = !!serviceId

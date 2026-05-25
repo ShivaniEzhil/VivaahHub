@@ -21,15 +21,16 @@ import {
   getVendorDashboardStats,
 } from "../controllers/vendorController.js";
 import { verifyToken, verifyResetToken, vendorCheck } from "../middleware/auth.js";
+import { authLimiter, otpRequestLimiter, otpVerifyLimiter } from "../middleware/rateLimiters.js";
 import { uploadServicePhotos, uploadCardImage, handleMulterError, normalizeServiceData, normalizeCardData } from "../middleware/vendorNormalizer.js";
 import User from "../models/User.js";
 
 const router = express.Router();
 
-router.post("/login", login);
-router.post("/request-otp", requestOtp);
-router.post("/verify-otp", verifyOtp);
-router.patch("/reset-password", verifyResetToken, resetPassword);
+router.post("/login", authLimiter, login);
+router.post("/request-otp", otpRequestLimiter, requestOtp);
+router.post("/verify-otp", otpVerifyLimiter, verifyOtp);
+router.patch("/reset-password", authLimiter, verifyResetToken, resetPassword);
 router.get("/check-reset-token", verifyResetToken, checkResetToken);
 
 router.post("/services", verifyToken, vendorCheck, uploadServicePhotos, handleMulterError, normalizeServiceData, createService);

@@ -9,16 +9,18 @@ import {
 } from "../controllers/userController.js"
 import { normalizeVendorRequest } from "../middleware/vendorNormalizer.js"
 import { verifyToken, userCheck } from "../middleware/auth.js"
+import { logout } from "../controllers/authController.js"
+import { authLimiter, otpRequestLimiter, otpVerifyLimiter } from "../middleware/rateLimiters.js"
 import User from "../models/User.js"
 
 const router = express.Router()
 
-router.post("/sign-in", signIn)
-router.post("/verify-sign-in-otp", verifySignInOtp)
-router.post("/sign-up", signUp)
-router.post("/verify-sign-up-otp", verifySignUpOtp)
-router.post("/register-vendor", normalizeVendorRequest, registerVendor)
-router.post("/verify-vendor-otp", normalizeVendorRequest, verifyVendorOtp)
+router.post("/sign-in", otpRequestLimiter, signIn)
+router.post("/verify-sign-in-otp", otpVerifyLimiter, verifySignInOtp)
+router.post("/sign-up", otpRequestLimiter, signUp)
+router.post("/verify-sign-up-otp", otpVerifyLimiter, verifySignUpOtp)
+router.post("/register-vendor", otpRequestLimiter, normalizeVendorRequest, registerVendor)
+router.post("/verify-vendor-otp", otpVerifyLimiter, normalizeVendorRequest, verifyVendorOtp)
 // Example protected route
 router.get("/dashboard", verifyToken, userCheck, (req, res) => {
   res.status(200).json({ message: "Welcome to User Dashboard", user: req.user })
@@ -52,9 +54,7 @@ router.get("/check-auth", verifyToken, (req, res) => {
     res.status(401).json({ message: "Authentication failed" })
   }
 })
-router.post("/logout", (req, res) => {
-  res.clearCookie("token").status(200).json({ message: "Logged out successfully" })
-})
+router.post("/logout", logout)
 
 export default router
 

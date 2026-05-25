@@ -7,6 +7,7 @@ import { NODE_ENV } from "../config/env.js"
 import bcrypt from "bcrypt"
 import { uploadBrandIcon } from "../utils/cloudinary.js"
 import { isValidIndianPhone, normalizeIndianPhone } from "../utils/phone.js"
+import { generateOtp, otpExpiry, findAndValidateOtp } from "../utils/otp.js"
 
 export const signIn = async (req, res) => {
   const phone = normalizeIndianPhone(req.body.phone || "")
@@ -33,8 +34,8 @@ export const signIn = async (req, res) => {
       }
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    const otp = generateOtp()
+    const expiresAt = otpExpiry()
 
     await OTP.findOneAndUpdate(
       { phone, role: "user" },
@@ -64,17 +65,12 @@ export const verifySignInOtp = async (req, res) => {
 
   try {
     const user = await User.findOne({ phone })
-    if (!user) return res.status(404).json({ message: "User not found" })
+    if (!user) return res.status(400).json({ message: "Invalid or expired OTP" })
 
-    const otpRecord = await OTP.findOne({ phone, otpCode: otp, role: "user" })
-    if (!otpRecord || new Date() > otpRecord.expiresAt) {
-      return res.status(400).json({ message: "Invalid or expired OTP" })
-    }
+    const result = await findAndValidateOtp({ phone, role: "user", otp })
+    if (result.error) return res.status(result.error.status).json({ message: result.error.message })
 
-    if (otpRecord.verified) {
-      return res.status(400).json({ message: "OTP has already been used" })
-    }
-
+    const otpRecord = result.record
     otpRecord.verified = true
     await otpRecord.save()
 
@@ -123,8 +119,8 @@ export const signUp = async (req, res) => {
       }
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    const otp = generateOtp()
+    const expiresAt = otpExpiry()
 
     await OTP.findOneAndUpdate(
       { phone, role: "user" },
@@ -153,15 +149,10 @@ export const verifySignUpOtp = async (req, res) => {
   if (!full_name || !req.body.phone || !otp) return res.status(400).json({ message: "Full name, phone, and OTP are required" })
 
   try {
-    const otpRecord = await OTP.findOne({ phone, otpCode: otp, role: "user" })
-    if (!otpRecord || new Date() > otpRecord.expiresAt) {
-      return res.status(400).json({ message: "Invalid or expired OTP" })
-    }
+    const result = await findAndValidateOtp({ phone, role: "user", otp })
+    if (result.error) return res.status(result.error.status).json({ message: result.error.message })
 
-    if (otpRecord.verified) {
-      return res.status(400).json({ message: "OTP has already been used" })
-    }
-
+    const otpRecord = result.record
     otpRecord.verified = true
     await otpRecord.save()
 
@@ -249,8 +240,16 @@ export const registerVendor = async (req, res) => {
       }
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+    // Upload brand icon up-front (Cloudinary, with local-disk fallback) and store only the URL
+    // on the OTP record. Avoids stuffing ~250 KB of base64 into the OTPs collection and decouples
+    // image lifetime from OTP TTL.
+    const brandIconUrl = await uploadBrandIcon({
+      buffer: brand_icon.data,
+      mimetype: brand_icon.mimetype,
+    })
+
+    const otp = generateOtp()
+    const expiresAt = otpExpiry()
 
     await OTP.findOneAndUpdate(
       { phone, role: "vendor" },
@@ -259,8 +258,9 @@ export const registerVendor = async (req, res) => {
         expiresAt,
         requestCount: (otpRecord?.requestCount || 0) + 1,
         lastRequestTime: now,
+        attemptCount: 0,
         verified: false,
-        resetToken: brand_icon.data.toString("base64"), // Store brand icon temporarily
+        pendingBrandIcon: brandIconUrl,
       },
       { upsert: true },
     )
@@ -290,14 +290,10 @@ export const verifyVendorOtp = async (req, res) => {
   if (vendorRequest.terms_accepted !== true) return res.status(400).json({ message: "Terms must be accepted" })
 
   try {
-    const otpRecord = await OTP.findOne({ phone, otpCode: otp, role: "vendor" })
-    if (!otpRecord || new Date() > otpRecord.expiresAt) {
-      return res.status(400).json({ message: "Invalid or expired OTP" })
-    }
+    const result = await findAndValidateOtp({ phone, role: "vendor", otp })
+    if (result.error) return res.status(result.error.status).json({ message: result.error.message })
 
-    if (otpRecord.verified) {
-      return res.status(400).json({ message: "OTP has already been used" })
-    }
+    const otpRecord = result.record
 
     // Normalize the category value to match the enum in the schema
     if (vendorRequest.category) {
@@ -320,23 +316,16 @@ export const verifyVendorOtp = async (req, res) => {
       vendorRequest.category = categoryMap[normalizedCategory] || vendorRequest.category;
     }
 
+    const brandIconUrl = otpRecord.pendingBrandIcon
+    if (!brandIconUrl) {
+      return res.status(400).json({ message: "Brand icon missing from registration. Please restart vendor signup." })
+    }
+
     otpRecord.verified = true
     await otpRecord.save()
 
     let user = await User.findOne({ phone })
     const hashedPassword = await bcrypt.hash(password, 10)
-    let brandIconUrl
-
-    if (otpRecord.resetToken) {
-      const brandIconBuffer = Buffer.from(otpRecord.resetToken, "base64")
-      const brandIconData = {
-        buffer: brandIconBuffer,
-        mimetype: req.normalizedBody.brand_icon?.mimetype || "image/jpeg",
-      }
-      brandIconUrl = await uploadBrandIcon(brandIconData)
-    } else {
-      return res.status(400).json({ message: "Brand icon data missing from OTP record" })
-    }
 
     const username = `user${phone.replace("+", "")}` // e.g., +919876543210 -> user919876543210
 

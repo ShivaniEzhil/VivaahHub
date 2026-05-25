@@ -1,10 +1,45 @@
 import mongoose from "mongoose";
 import { MONGO_URI, NODE_ENV } from "./env.js";
 
+const isAtlas = MONGO_URI.includes("mongodb.net") || MONGO_URI.startsWith("mongodb+srv://");
+
 const connectOptions = {
   serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
   maxPoolSize: 10,
+  heartbeatFrequencyMS: 10000,
+  retryWrites: true,
+  family: 4,
+};
+
+let listenersAttached = false;
+let lastState = null;
+
+const attachListenersOnce = () => {
+  if (listenersAttached) return;
+  listenersAttached = true;
+
+  mongoose.connection.on("disconnected", () => {
+    if (lastState !== "disconnected") {
+      console.warn("MongoDB disconnected — mongoose will auto-retry");
+      lastState = "disconnected";
+    }
+  });
+
+  mongoose.connection.on("reconnected", () => {
+    console.log("MongoDB reconnected");
+    lastState = "connected";
+  });
+
+  mongoose.connection.on("connected", () => {
+    if (lastState !== "connected") {
+      lastState = "connected";
+    }
+  });
+
+  mongoose.connection.on("error", (err) => {
+    console.error("MongoDB connection error:", err.message);
+  });
 };
 
 const connectDB = async () => {
@@ -19,16 +54,9 @@ const connectDB = async () => {
       }
 
       await mongoose.connect(MONGO_URI, connectOptions);
-      console.log("MongoDB connected");
-
-      mongoose.connection.on("disconnected", () => {
-        console.warn("MongoDB disconnected — queries may fail until restart");
-      });
-
-      mongoose.connection.on("error", (err) => {
-        console.error("MongoDB connection error:", err.message);
-      });
-
+      console.log(`MongoDB connected (${isAtlas ? "Atlas" : "local"})`);
+      lastState = "connected";
+      attachListenersOnce();
       return;
     } catch (error) {
       lastError = error;

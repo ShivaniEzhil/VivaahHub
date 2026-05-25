@@ -11,9 +11,6 @@ import axios from "axios"
 import { generateWhatsAppLink } from "../utils/whatsapp.js"
 import createAPI from "../utils/api"
 
-// Import the responsive styles
-import "../styles/responsive.css"
-
 const VendorDashboard = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
@@ -73,7 +70,7 @@ const VendorDashboard = () => {
       
       if (tab === "cards" || activeTab === "cards") {
         const cardsRes = await api.get(`/vendor/dashboard/cards?page=${page}&limit=5`)
-        newData = { ...newData, cards: cardsRes.data.data || servicesRes.data }
+        newData = { ...newData, cards: cardsRes.data.data || cardsRes.data }
         
         // Update pagination state if the response includes pagination data
         if (cardsRes.data.pagination) {

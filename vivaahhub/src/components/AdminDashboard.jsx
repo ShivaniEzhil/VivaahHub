@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useAuth } from "../context/AuthContext"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { Button, Modal } from "react-bootstrap"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
@@ -440,9 +440,9 @@ const AdminDashboard = () => {
         <i className="fas fa-bars"></i>
       </button>
       <div className={`sidebar ${sidebarActive ? "active" : ""}`}>
-        <a href="/" className="sidebar-logo">
+        <Link to="/" className="sidebar-logo" title="Back to main site">
           VivaahHub
-        </a>
+        </Link>
         <ul className="sidebar-nav">
           <li>
             <a
@@ -494,6 +494,11 @@ const AdminDashboard = () => {
             >
               <i className="fas fa-user-plus"></i> Vendor Requests
             </a>
+          </li>
+          <li>
+            <Link to="/" title="Back to main site">
+              <i className="fas fa-arrow-left"></i> Back to Site
+            </Link>
           </li>
           <li>
             <a href="#" onClick={handleLogout}>

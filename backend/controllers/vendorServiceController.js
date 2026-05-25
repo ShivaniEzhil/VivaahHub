@@ -1,7 +1,10 @@
 import Service from "../models/Service.js";
 import CardTemplate from "../models/CardTemplate.js";
 import Booking from "../models/Booking.js";
+import User from "../models/User.js";
 import { uploadServiceImages } from "../utils/cloudinary.js";
+import { sendOTP } from "../utils/twilio.js";
+import { generateWhatsAppLink } from "../utils/whatsapp.js";
 import mongoose from "mongoose";
 
 export const getVendorDashboardStats = async (req, res) => {

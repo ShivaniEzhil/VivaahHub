@@ -9,14 +9,15 @@ import {
   rejectVendor
 } from "../controllers/adminController.js"
 import { verifyToken, verifyResetToken, adminCheck } from "../middleware/auth.js"
+import { authLimiter, otpRequestLimiter, otpVerifyLimiter } from "../middleware/rateLimiters.js"
 import {  Admin } from "../models/Admin.js"
 
 const router = express.Router()
 
-router.post("/login", login)
-router.post("/request-otp", requestOtp)
-router.post("/verify-otp", verifyOtp)
-router.patch("/reset-password", verifyResetToken, resetPassword)
+router.post("/login", authLimiter, login)
+router.post("/request-otp", otpRequestLimiter, requestOtp)
+router.post("/verify-otp", otpVerifyLimiter, verifyOtp)
+router.patch("/reset-password", authLimiter, verifyResetToken, resetPassword)
 router.get("/check-reset-token", verifyResetToken, checkResetToken)
 router.get("/dashboard", verifyToken, adminCheck, (req, res) => {
   res.status(200).json({ message: "Welcome to Admin Dashboard", admin: req.user })

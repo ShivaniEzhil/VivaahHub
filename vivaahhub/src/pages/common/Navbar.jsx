@@ -71,7 +71,7 @@ const Navbar = () => {
                   onClick={() => setIsUserOpen(!isUserOpen)}
                 >
                   <i className="fas fa-user"></i>
-                  <span id="dropdown-label">{user ? user.full_name : 'Account'}</span>
+                  <span id="dropdown-label">{user ? (user.full_name || user.username || 'Account') : 'Account'}</span>
                   <i className={`fas fa-chevron-down dropdown-toggle-chevron ${isUserOpen ? 'rotate' : ''}`}></i>
                 </Link>
                 <ul className={`dropdown-menu ${isUserOpen ? 'show' : ''}`} id="userDropdownMenu">
@@ -91,19 +91,12 @@ const Navbar = () => {
                           </Link>
                         </li>
                       )}
-                      {user.role === 'admin' && (
-                        <>
-                          <li>
-                            <Link className="dropdown-item" to="/dashboard">
-                              Dashboard
-                            </Link>
-                          </li>
-                          <li>
-                            <Link className="dropdown-item" to="/admin/dashboard">
-                              Admin Dashboard
-                            </Link>
-                          </li>
-                        </>
+                      {(user.role === 'superadmin' || user.role === 'moderator') && (
+                        <li>
+                          <Link className="dropdown-item" to="/admin/dashboard">
+                            Admin Dashboard
+                          </Link>
+                        </li>
                       )}
                       <li><Link className="dropdown-item" to="/" onClick={handleLogout}>Logout</Link></li>
                     </>
@@ -112,6 +105,7 @@ const Navbar = () => {
                       <li><Link className="dropdown-item" to="/signin">Sign In</Link></li>
                       <li><Link className="dropdown-item" to="/signup">Sign Up</Link></li>
                       <li><Link className="dropdown-item" to="/vendor/login">Vendor Login</Link></li>
+                      <li><Link className="dropdown-item" to="/admin/login">Admin Login</Link></li>
                     </>
                   )}
                 </ul>

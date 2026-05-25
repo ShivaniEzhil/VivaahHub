@@ -9,6 +9,7 @@ import EstimateSidebar from "./common/EstimateSidebar"
 import { fetchCardDetails, checkCardAvailability } from "../services/api"
 import { useEstimate } from "../context/EstimateContext"
 import { useAuth } from "../context/AuthContext"
+import { API_BASE_URL } from "../config.js"
 import "./details-page.css"
 
 const WeddingCardsDetails = () => {
@@ -63,7 +64,7 @@ const WeddingCardsDetails = () => {
     }
     try {
       const payload = { card_template_id: id, date_time: date, quantity }
-      const response = await fetch("http://localhost:5000/dashboard/user/bookings", {
+      const response = await fetch(`${API_BASE_URL}/dashboard/user/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -8,17 +8,20 @@ import { generateToken, generateResetToken } from "../middleware/auth.js";
 import { NODE_ENV } from "../config/env.js";
 import bcrypt from "bcrypt";
 import { generateWhatsAppLink } from "../utils/whatsapp.js";
-import mongoose from "mongoose"; // Added missing import
+import { generateOtp, otpExpiry, findAndValidateOtp } from "../utils/otp.js";
+import mongoose from "mongoose";
 
 
 export const login = async (req, res) => {
   const { identifier, password } = req.body;
 
-  if (!identifier || !password) return res.status(400).json({ message: "Username/phone and password are required" });
+  if (typeof identifier !== "string" || typeof password !== "string" || !identifier || !password) {
+    return res.status(400).json({ message: "Username/phone and password are required" });
+  }
 
   try {
     const vendor = await User.findOne({ $or: [{ username: identifier }, { phone: identifier }], role: "vendor" });
-    if (!vendor) return res.status(404).json({ message: "Vendor not found" });
+    if (!vendor) return res.status(401).json({ message: "Invalid credentials" });
 
     const isMatch = await bcrypt.compare(password, vendor.password);
     if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
@@ -63,8 +66,8 @@ export const requestOtp = async (req, res) => {
       }
     }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    const otp = generateOtp();
+    const expiresAt = otpExpiry();
 
     await OTP.findOneAndUpdate(
       { phone, role: "vendor" },
@@ -92,15 +95,10 @@ export const verifyOtp = async (req, res) => {
   if (!phone || !otp) return res.status(400).json({ message: "Phone and OTP are required" });
 
   try {
-    const otpRecord = await OTP.findOne({ phone, otpCode: otp, role: "vendor" });
-    if (!otpRecord || new Date() > otpRecord.expiresAt) {
-      return res.status(400).json({ message: "Invalid or expired OTP" });
-    }
+    const result = await findAndValidateOtp({ phone, role: "vendor", otp });
+    if (result.error) return res.status(result.error.status).json({ message: result.error.message });
 
-    if (otpRecord.verified) {
-      return res.status(400).json({ message: "OTP has already been used" });
-    }
-
+    const otpRecord = result.record;
     otpRecord.verified = true;
     await otpRecord.save();
 

@@ -1,12 +1,11 @@
 import express from "express";
-import dotenv from "dotenv";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import fileUpload from "express-fileupload";
-import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import { PORT, NODE_ENV, FRONTEND_URL } from "./config/env.js";
 import connectDB from "./config/db.js";
+import { globalLimiter } from "./middleware/rateLimiters.js";
 import userRoutes from "./routes/user.js";
 import adminRoutes from "./routes/admin.js";
 import authRoutes from "./routes/auth.js";
@@ -20,25 +19,19 @@ import path from "path";
 import { fileURLToPath } from "url";
 import fs from "fs";
 
-dotenv.config();
-
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 1000000,
-  message: "Too many requests from this IP, please try again after 15 minutes",
-});
-
 async function startServer() {
   try {
     await connectDB();
 
     const app = express();
 
+    app.set("trust proxy", 1);
+
     app.use(helmet());
-    app.use(limiter);
+    app.use(globalLimiter);
     app.use(cors({ origin: FRONTEND_URL, credentials: true }));
-    app.use(express.json());
-    app.use(express.urlencoded({ extended: true }));
+    app.use(express.json({ limit: "1mb" }));
+    app.use(express.urlencoded({ extended: true, limit: "1mb" }));
     app.use(cookieParser());
     app.use(fileUpload({ limits: { fileSize: 5 * 1024 * 1024 }, abortOnLimit: true }));
 

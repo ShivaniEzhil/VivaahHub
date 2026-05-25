@@ -1,79 +1,95 @@
 import { v2 as cloudinary } from "cloudinary"
 import { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from "../config/env.js"
+import { saveBrandIconLocal, saveServiceImagesLocal, saveCardImageLocal } from "./localImageStorage.js"
+
+const cloudinaryConfigured = Boolean(
+  CLOUDINARY_CLOUD_NAME && CLOUDINARY_API_KEY && CLOUDINARY_API_SECRET
+)
 
 cloudinary.config({
   cloud_name: CLOUDINARY_CLOUD_NAME,
   api_key: CLOUDINARY_API_KEY,
   api_secret: CLOUDINARY_API_SECRET,
-  timeout: 60000 // Set a 60 second timeout for all operations
+  timeout: 60000
 })
 
+if (!cloudinaryConfigured) {
+  console.warn("[storage] Cloudinary not configured — using local backend/uploads/ for image storage")
+}
+
 export const uploadBrandIcon = async (imageData) => {
+  if (!imageData || !imageData.buffer) {
+    throw new Error("No image data provided")
+  }
+
+  const maxSize = 250 * 1024
+  if (imageData.buffer.length > maxSize) {
+    throw new Error("Image size must be less than 250KB")
+  }
+
+  const allowedFormats = ["image/jpeg", "image/jpg", "image/png"]
+  if (!allowedFormats.includes(imageData.mimetype)) {
+    throw new Error("Image must be in JPEG, JPG, or PNG format")
+  }
+
+  if (!cloudinaryConfigured) {
+    return saveBrandIconLocal(imageData)
+  }
+
   try {
-    if (!imageData || !imageData.buffer) {
-      throw new Error("No image data provided")
-    }
-
-    const maxSize = 250 * 1024
-    if (imageData.buffer.length > maxSize) {
-      throw new Error("Image size must be less than 250KB")
-    }
-
-    const allowedFormats = ["image/jpeg", "image/jpg", "image/png"]
-    if (!allowedFormats.includes(imageData.mimetype)) {
-      throw new Error("Image must be in JPEG, JPG, or PNG format")
-    }
-
     const base64Image = `data:${imageData.mimetype};base64,${imageData.buffer.toString("base64")}`
     const result = await cloudinary.uploader.upload(base64Image, {
       folder: "vivaahhub/brand_icons",
       resource_type: "image",
     })
-
     return result.secure_url
   } catch (error) {
-    console.error("Cloudinary upload error:", error)
-    throw new Error(error.message || "Failed to upload brand icon")
+    console.warn("[storage] Cloudinary upload failed, saving brand icon locally:", error.message)
+    return saveBrandIconLocal(imageData)
   }
 }
 
 export const uploadServiceImages = async (images) => {
-  try {
-    const maxSize = 500 * 1024 // 500KB
-    const allowedFormats = ["image/jpeg", "image/jpg", "image/png"]
-    const uploadPromises = []
+  const maxSize = 500 * 1024
+  const allowedFormats = ["image/jpeg", "image/jpg", "image/png"]
 
-    for (const image of images) {
-      if (image.size > maxSize) {
-        throw new Error(`Image ${image.name} exceeds the maximum size of 500KB`)
-      }
-
-      if (!allowedFormats.includes(image.mimetype)) {
-        throw new Error(`Image ${image.name} must be in JPEG, JPG, or PNG format`)
-      }
-
-      const base64Image = `data:${image.mimetype};base64,${image.data.toString("base64")}`
-      const uploadPromise = cloudinary.uploader.upload(base64Image, {
-        folder: "vivaahhub/services",
-        resource_type: "image",
-      })
-
-      uploadPromises.push(uploadPromise)
+  for (const image of images) {
+    if (image.size > maxSize) throw new Error(`Image ${image.name} exceeds the maximum size of 500KB`)
+    if (!allowedFormats.includes(image.mimetype)) {
+      throw new Error(`Image ${image.name} must be in JPEG, JPG, or PNG format`)
     }
+  }
 
-    const results = await Promise.all(uploadPromises)
+  if (!cloudinaryConfigured) {
+    return saveServiceImagesLocal(images)
+  }
+
+  try {
+    const results = await Promise.all(
+      images.map((image) => {
+        const base64Image = `data:${image.mimetype};base64,${image.data.toString("base64")}`
+        return cloudinary.uploader.upload(base64Image, {
+          folder: "vivaahhub/services",
+          resource_type: "image",
+        })
+      })
+    )
     return results.map((result) => result.secure_url)
   } catch (error) {
-    console.error("Cloudinary service images upload error:", error)
-    throw new Error(error.message || "Failed to upload service images")
+    console.warn("[storage] Cloudinary upload failed, saving service images locally:", error.message)
+    return saveServiceImagesLocal(images)
   }
 }
 
 export const uploadCardImage = async (image) => {
+  if (!cloudinaryConfigured) {
+    return saveCardImageLocal(image)
+  }
+
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000; // 2 seconds
   let attempts = 0;
-  
+
   while (attempts < MAX_RETRIES) {
     attempts++;
     try {
@@ -155,22 +171,28 @@ export const uploadCardImage = async (image) => {
     } catch (error) {
       console.error(`Cloudinary upload attempt ${attempts} failed:`, error)
       
-      // If we've exhausted retries, throw the error
+      // If we've exhausted retries, fall back to local storage
       if (attempts >= MAX_RETRIES) {
-        console.error("Cloudinary card image upload error:", error)
-        throw new Error(error.message || "Failed to upload card image")
+        console.warn("[storage] Cloudinary upload failed after retries, saving card image locally:", error.message)
+        try {
+          return await saveCardImageLocal(image)
+        } catch (localErr) {
+          throw new Error(localErr.message || "Failed to upload card image")
+        }
       }
-      
+
       // If it's a timeout error, wait and retry
-      if (error.http_code === 499 || error.error?.http_code === 499 || 
+      if (error.http_code === 499 || error.error?.http_code === 499 ||
           error.message?.includes('timeout') || error.error?.message?.includes('timeout')) {
         console.log(`Upload timed out. Retrying in ${RETRY_DELAY/1000} seconds...`);
-        // Wait before retrying
         await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
       } else {
-        // For non-timeout errors, don't retry
-        console.error("Cloudinary card image upload error:", error)
-        throw new Error(error.message || "Failed to upload card image")
+        console.warn("[storage] Cloudinary upload failed, saving card image locally:", error.message)
+        try {
+          return await saveCardImageLocal(image)
+        } catch (localErr) {
+          throw new Error(localErr.message || "Failed to upload card image")
+        }
       }
     }
   }
