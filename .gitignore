@@ -22,6 +22,3 @@ build/
 Thumbs.db
 .idea/
 .vscode/
-
-# Cursor project assets (local only)
-assets/
