@@ -8,7 +8,7 @@ import { Button, Modal } from "react-bootstrap"
 import { ToastContainer, toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import onboardingImg from "../assets/images/onboarding.png"
-import indiaFlag from "../assets/images/IN-flag.png"
+import indiaFlag from "../assets/images/IN-flag.webp"
 import { DEFAULT_PHONE_PREFIX } from "../utils/phone.js"
 import "../styles/vendor-auth.css"
 
