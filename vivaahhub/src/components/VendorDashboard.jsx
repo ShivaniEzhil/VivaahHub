@@ -426,6 +426,11 @@ const VendorDashboard = () => {
             </a>
           </li>
           <li>
+            <a href="/">
+              <i className="fas fa-arrow-left"></i> Back to Site
+            </a>
+          </li>
+          <li>
             <a 
               onClick={(e) => {
                 e.preventDefault();
@@ -438,6 +443,13 @@ const VendorDashboard = () => {
         </ul>
       </div>
       <div className="main-content">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="dashboard-back-btn" 
+          title="Go Back"
+        >
+          <i className="fas fa-arrow-left"></i> Back
+        </button>
         {/* Dashboard */}
         <div className={`content-section ${activeTab === "dashboard" ? "active" : ""}`}>
           {/* Update the styling for action buttons */}

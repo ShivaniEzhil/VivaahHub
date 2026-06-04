@@ -1536,6 +1536,15 @@ const CardEditor = () => {
     <div className="card-editor-container">
       <nav className="editor-navbar">
         <div className="container-fluid">
+          <button 
+            type="button"
+            onClick={() => navigate(-1)} 
+            className="btn btn-outline-secondary btn-sm me-3" 
+            title="Go Back"
+            style={{ borderColor: "#d7385e", color: "#d7385e" }}
+          >
+            <i className="fas fa-arrow-left"></i> Back
+          </button>
           <a className="navbar-brand" href="#">
             VivaahHub Card Editor
           </a>

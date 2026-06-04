@@ -442,6 +442,35 @@ tr:hover td {
   cursor: not-allowed;
 }
 
+.dashboard-back-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 2px solid #d7385e;
+  color: #d7385e;
+  padding: 8px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  transition: all 0.3s ease;
+  text-decoration: none;
+}
+
+.dashboard-back-btn:hover {
+  background: #d7385e;
+  color: #fff;
+  transform: scale(1.05);
+  box-shadow: 0 4px 15px rgba(215, 56, 94, 0.3);
+}
+
+.dashboard-back-btn:active {
+  transform: scale(0.95);
+}
+
 /* Loading State */
 .loading-container {
   display: flex;

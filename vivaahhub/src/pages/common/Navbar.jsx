@@ -62,6 +62,15 @@ const Navbar = () => {
       <nav className="navbar py-3 navbar-expand-lg navbar-light fixed-top">
         <div className="header-container">
           <div className="navbar-left">
+            {location.pathname !== '/' && (
+              <button 
+                onClick={() => navigate(-1)} 
+                className="navbar-back-btn" 
+                aria-label="Go Back"
+              >
+                <i className="fas fa-arrow-left"></i>
+              </button>
+            )}
             <Link className="navbar-brand" to="/">VivaahHub</Link>
             <ul className="navbar-nav">
               <li className="nav-item dropdown user-dropdown">

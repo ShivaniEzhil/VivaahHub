@@ -1,6 +1,9 @@
 import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 export const NODE_ENV = process.env.NODE_ENV || "development";
 const isProd = NODE_ENV === "production";
@@ -35,7 +38,7 @@ if (!process.env.JWT_SECRET) {
   } else {
     warnings.push("JWT_SECRET is not set — using insecure dev default");
   }
-} else if (JWT_SECRET === DEV_JWT_SECRET) {
+} else if (JWT_SECRET === DEV_JWT_SECRET && isProd) {
   errors.push("JWT_SECRET cannot be the dev default in production");
 } else if (JWT_SECRET.length < 32 && isProd) {
   errors.push("JWT_SECRET must be at least 32 characters in production");

@@ -508,6 +508,13 @@ const AdminDashboard = () => {
         </ul>
       </div>
       <div className="main-content">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="dashboard-back-btn" 
+          title="Go Back"
+        >
+          <i className="fas fa-arrow-left"></i> Back
+        </button>
         {/* Dashboard */}
         <div className={`content-section ${activeTab === "dashboard" ? "active" : ""}`}>
           <div className="dashboard-header">

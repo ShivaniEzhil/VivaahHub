@@ -375,6 +375,11 @@ const Dashboard = () => {
             </a>
           </li>
           <li>
+            <a href="/">
+              <i className="fas fa-arrow-left"></i> Back to Site
+            </a>
+          </li>
+          <li>
             <a href="#" onClick={handleLogout}>
               <i className="fas fa-sign-out-alt"></i> Logout
             </a>
@@ -382,6 +387,13 @@ const Dashboard = () => {
         </ul>
       </div>
       <div className="main-content" id="mainContent">
+        <button 
+          onClick={() => navigate(-1)} 
+          className="dashboard-back-btn" 
+          title="Go Back"
+        >
+          <i className="fas fa-arrow-left"></i> Back
+        </button>
         <div className={`content-section ${activeTab === "dashboard" ? "active" : ""}`} id="dashboard">
           <div className="dashboard-header">
             <h1>Welcome, {user?.full_name || "User"}</h1>

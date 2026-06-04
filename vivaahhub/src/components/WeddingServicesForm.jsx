@@ -596,6 +596,14 @@ const WeddingServicesForm = () => {
   return (
     <div className="service-form-container">
       <div className="service-form-card">
+        <button 
+          type="button" 
+          onClick={() => navigate(-1)} 
+          className="btn btn-outline-secondary btn-sm mb-3"
+          style={{ display: "inline-flex", alignItems: "center", gap: "8px", borderColor: "#d7385e", color: "#d7385e" }}
+        >
+          <i className="fas fa-arrow-left"></i> Back
+        </button>
         <h1>{isEditMode ? "Edit Service" : "Add Wedding Service"}</h1>
 
         <form onSubmit={handleSubmit}>

@@ -4,11 +4,14 @@
  */
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import path from "path";
+import { fileURLToPath } from "url";
 import { MONGO_URI } from "../config/env.js";
 import Service from "../models/Service.js";
 import User from "../models/User.js";
 
-dotenv.config();
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const baseService = {
   photos: ["https://images.unsplash.com/photo-1519741497674-611481863552?w=400"],
