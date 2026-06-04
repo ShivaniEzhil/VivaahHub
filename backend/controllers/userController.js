@@ -80,7 +80,7 @@ export const verifySignInOtp = async (req, res) => {
       .cookie("token", token, {
         httpOnly: true,
         secure: NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: NODE_ENV === "production" ? "none" : "lax",
         maxAge: 60 * 60 * 1000,
       })
       .status(200)
@@ -169,7 +169,7 @@ export const verifySignUpOtp = async (req, res) => {
       .cookie("token", token, {
         httpOnly: true,
         secure: NODE_ENV === "production",
-        sameSite: "lax",
+        sameSite: NODE_ENV === "production" ? "none" : "lax",
         maxAge: 60 * 60 * 1000,
       })
       .status(201)

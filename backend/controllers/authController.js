@@ -5,7 +5,7 @@ export const logout = (req, res) => {
     .clearCookie("token", {
       httpOnly: true,
       secure: NODE_ENV === "production", // Now NODE_ENV is defined
-      sameSite: "lax",
+      sameSite: NODE_ENV === "production" ? "none" : "lax",
     })
     .status(200)
     .json({ message: "Logged out successfully" })
