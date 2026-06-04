@@ -1,0 +1,10 @@
+{
+  "name": "vivaahhub",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix vivaahhub",
+    "backend": "npm start --prefix backend",
+    "frontend": "npm run dev --prefix vivaahhub",
+    "dev": "npm run backend & npm run frontend"
+  }
+}
